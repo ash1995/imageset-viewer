@@ -1,6 +1,6 @@
-# ImageSet Viewer
+# VOC Annotation Viewer
 
-A GUI, for object detection dataset. Displaying single image with bounding boxes (if any). Now only support PASCAL VOC format.
+A GUI, for viewing object detection datasets. Displays single image with bounding boxes (if any). Now only supports PASCAL VOC format. This is a modified fork of Zhuo Zhang's [imageset-viewer](https://github.com/zchrissirhcz/imageset-viewer) with modifications to support alternate VOC style annotations.
 
 ![](./screenshot.png)
 
@@ -30,3 +30,4 @@ A GUI, for object detection dataset. Displaying single image with bounding boxes
 ## Usage
 1. Run `imageset-viewer.py`
 2. Select directory containing images.
+3. Voila!

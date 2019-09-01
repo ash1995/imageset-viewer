@@ -23,5 +23,10 @@ A GUI, for object detection dataset. Displaying single image with bounding boxes
 ## Supported Function
 - Choosing image folder via button
 - Viewing images with annotated bounding boxes via mouse or arrowdown key
-- Change box thick (in code)
+- Change box thickness (in code)
 - Displaying with specified resizing image height/width (in code)
+
+
+## Usage
+1. Run `imageset-viewer.py`
+2. Select directory containing images.

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # coding:utf-8
-# Author: Zhuo Zhang (imzhuo@foxmail.com)
-# Date: 2017.10.22 22:36
+# Author: Ashwin Nair
+# Date: 2019.9.1 16:30
 # Description:
-#   　浏览pascal voc 2007格式的object detection数据集图片
-#     功能：选择图片文件夹；自动寻找对应的annotation文件；图片显示bbgt；滚动显示
-# 使用的技术：
+# Annotation visualiser for the Pascal VOC style datasets. This is a modified version
+# of Zhuo Zhang's original code which can be found here -> https://github.com/zchrissirhcz/imageset-viewer
+# Packages Used：
 #     Python, Tkinter(GUI), opencv(image processing), lxml(annotation parsing)
 #
 # Package requirements:
@@ -47,7 +47,7 @@ class App:
     def __init__(self, master, im_dir=None, show_x=None, show_y=None, box_thick=1):
         # 加载图像：tk不支持直接使用jpg图片。需要Pillow模块进行中转
         """
-        @param im_dir: 包含图片的路径，也就是"JPEGImages". 要求它的同级目录中包含Annotations目录，里面包含各种xml文件。
+        @param im_dir: 包含图片的路径，也就是"images". 要求它的同级目录中包含annotations目录，里面包含各种xml文件。
         @param show_x: 图片显示时候的宽度
         @param show_y: 图片显示时的高度
         @param box_thick: 画框的宽度
@@ -61,7 +61,7 @@ class App:
         self.path_entry = tk.Entry(master, text=self.im_dir, width=60, state='readonly')
         self.path_entry.grid(row=0, column=0)
 
-        self.choose_path_btn = tk.Button(master, text='输入路径', command=self.selectPath)
+        self.choose_path_btn = tk.Button(master, text='Choose image directory', command=self.selectPath)
         self.choose_path_btn.grid(row=0, column=1)
 
         ## 设定封面
@@ -95,13 +95,19 @@ class App:
 
     def callback(self, event=None):
         im_id = self.listbox.curselection()
+
         if im_id:
             im_name = self.listbox.get(im_id)
             if (im_name.endswith('.jpg') or im_name.endswith('.png')):
                 im_name_full = os.path.join(self.im_dir.get(), im_name).replace('\\', '/')
                 self.tkim = self.get_tkim(im_name_full)
                 self.label1.configure(image=self.tkim)
-                #print(im_name_full)
+
+    def serial2point(self,box):
+        # Input - box = [x1,y1,x2,y2,....]
+        # Output - box = [[x1,y1],[x2,y2]....]
+        point_list = list(zip(box[::2],box[1::2]))
+        return point_list
 
     def get_tkim(self, im_name_full):
         """
@@ -122,18 +128,34 @@ class App:
             print('show_x={:d}, im_wt={:d}, show_y={:d}, im_ht={:d}'.format(show_x, im_wt, show_y, im_ht))
         scale_x = im_wt*1.0 / show_x
         scale_y = im_ht*1.0 / show_y
-        anno_name_full = im_name_full.replace('JPEGImages', 'Annotations').replace('.jpg', '.xml').replace('.png', '.xml')
+        name = os.path.basename(im_name_full)[:-4] # image_name
+        anno_name_full = os.path.join(os.path.dirname(os.path.dirname(im_name_full)),'annotations', name + ".xml") #im_name_full.replace('images', 'annotations').replace('.jpg', '.xml').replace('.png', '.xml')
         print('anno_name_full is:', anno_name_full)
         if os.path.exists(anno_name_full):
-            print(' existing the xml file!')
+            print('Xml file exists!')
             boxes = self.get_boxes_from_voc_xml(anno_name_full)
+            
             for box in boxes:
-                cv2.rectangle(im,
-                          pt1=(int(box[0]/scale_x), int(box[1]/scale_y)),
-                          pt2=(int(box[2]/scale_x), int(box[3]/scale_y)),
-                          color=(0, 255, 0),
-                          thickness=self.box_thick
-                          )
+                if len(box) !=4:
+                    # box represented by set of points [x0,y0,x1,y1,x2,y2,.....]
+                    box = self.serial2point(box)
+                    box = np.int0(box)
+                    cv2.drawContours(im,
+                              [box],
+                              0,
+                              color=(0, 255, 0),
+                              thickness=self.box_thick
+                              )
+                else:
+                    # box represented by [x, y, w, h]
+                    cv2.rectangle(im,
+                        pt1=(int(box[0]/scale_x), int(box[1]/scale_y)),
+                        pt2=(int(box[2]/scale_x), int(box[3]/scale_y)),
+                        color=(0, 255, 0),
+                        thickness=self.box_thick
+                        )
+
+
         im = im[:, :, ::-1]  #bgr => rgb   necessary
         tkim = ImageTk.PhotoImage(Image.fromarray(im))
         return tkim
@@ -188,7 +210,7 @@ if __name__ == '__main__':
     """
     ## 也可以在代码中指定
     ## eg1: 指定图片路径
-    im_dir = '/opt/data/PASCAL_VOC/VOCdevkit2007/TT100/JPEGImages'
+    im_dir = '/opt/data/PASCAL_VOC/VOCdevkit2007/TT100/images'
     app = App(root, im_dir)
 
     ## eg2: 还可以指定显示的图片的长度和宽度，也就是要做图像缩放了。
